@@ -37,7 +37,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
-    private final StateManagementService stateManagementService;
+//    private final StateManagementService stateManagementService;
     private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
@@ -72,7 +72,7 @@ public class AuthService {
             Member member = memberRepository.findByEmail(memberLoginDto.getEmail())
                     .orElseThrow(()-> new ApiException(NO_MEMBER_ERROR));
 
-            stateManagementService.sendLoginState(member.getId().toString());
+//            stateManagementService.sendLoginState(member.getId().toString());
 
             log.info("로그인 요청 [DONE] email : {}", memberLoginDto.getEmail());
 

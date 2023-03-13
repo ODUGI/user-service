@@ -29,7 +29,7 @@ public class MemberController {
     private final ResponseService responseService;
     private final AuthService authService;
     private final FileUploadService fileUploadService;
-    private final StateManagementService stateManagementService;
+//    private final StateManagementService stateManagementService;
 
     @GetMapping("/info")
     public CommonResponse<Object> findMemberInfoById(HttpServletRequest request) {
@@ -47,7 +47,7 @@ public class MemberController {
 
     @PostMapping("/logout")
     public CommonResponse<Object> logout(HttpServletRequest request){
-        stateManagementService.sendLogoutState(request.getHeader("id"));
+//        stateManagementService.sendLogoutState(request.getHeader("id"));
         return responseService.getSuccessResponse(LOGOUT_SUCCESS, null);
     }
 
