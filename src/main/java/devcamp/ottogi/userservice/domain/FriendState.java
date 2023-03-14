@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum FriendState {
 
+    SEND("친구 전송 완료"),
     REQUEST("친구 신청 보냄"),
     WAIT("친구 승인 기다림"),
     ACCEPTED("친구 승인됨"),

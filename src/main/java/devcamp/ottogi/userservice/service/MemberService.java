@@ -58,7 +58,7 @@ public class MemberService {
         }
         String channelId = sender.getName() + receiver.getName();
 
-        friendRepository.save(new Friend(sender, receiver, REQUEST, channelId));
+        friendRepository.save(new Friend(sender, receiver, SEND, channelId));
 
         log.info("친구 요청 [DONE] userId {} , To : {}", userId, email);
 
@@ -89,7 +89,7 @@ public class MemberService {
                             .userId(friend.getReceiver().getId())
                             .email(friend.getReceiver().getEmail())
                             .profileImagePath(friend.getReceiver().getProfileImagePath())
-                            .friendState(friend.getState())
+                            .friendState(ACCEPTED)
                             .channelId(friend.getChannelId())
                             .createdAt(friend.getCreatedAt())
                             .build());
