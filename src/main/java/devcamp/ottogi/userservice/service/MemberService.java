@@ -1,5 +1,6 @@
 package devcamp.ottogi.userservice.service;
 
+import devcamp.ottogi.userservice.domain.FriendState;
 import devcamp.ottogi.userservice.dto.response.FriendResponseDto;
 import devcamp.ottogi.userservice.dto.response.MemberResponseDto;
 import devcamp.ottogi.userservice.entity.Friend;
@@ -41,7 +42,6 @@ public class MemberService {
     }
 
     public String addFriend(Long userId, String email) {
-        log.info("친구 요청 [IN] userId : {} , To : {}", userId, email);
 
         Member sender = memberRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(NO_MEMBER_ERROR));
@@ -50,6 +50,8 @@ public class MemberService {
         Member receiver = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(NO_MEMBER_ERROR));
 
+        log.info("친구 요청 [IN] userId : {} , To : {}", sender.getEmail(), receiver.getEmail());
+
 
         if (friendRepository.existFriendRow(sender.getId(), receiver.getId()).isPresent()) {
             throw new ApiException(DUPLICATED_FRIEND);
@@ -57,7 +59,6 @@ public class MemberService {
         String channelId = sender.getName() + receiver.getName();
 
         friendRepository.save(new Friend(sender, receiver, REQUEST, channelId));
-        friendRepository.save(new Friend(receiver, sender, WAIT, channelId));
 
         log.info("친구 요청 [DONE] userId {} , To : {}", userId, email);
 
@@ -66,7 +67,7 @@ public class MemberService {
 
     public List<FriendResponseDto> showFriend(Long userId) {
 
-//        log.info("친구 조회 [IN] userId : {}", userId);
+        log.info("친구 조회 [IN] userId : {}", userId);
 
         List<Friend> friendList = friendRepository.findFriends(userId)
                 .orElseThrow(() -> new ApiException(NO_SHOW_FRIENDS));
@@ -74,40 +75,84 @@ public class MemberService {
         List<FriendResponseDto> friendResponseDtoList = new ArrayList<>();
 
         for (Friend friend : friendList) {
-            friendResponseDtoList.add(new FriendResponseDto().builder()
-                    .name(friend.getReceiver().getName())
-                    .userId(friend.getReceiver().getId())
-                    .email(friend.getReceiver().getEmail())
-                    .profileImagePath(friend.getReceiver().getProfileImagePath())
-                    .friendState(friend.getState())
-                    .channelId(friend.getChannelId())
-                    .createdAt(friend.getCreatedAt())
-                    .build());
+
+            // 내가 sender 라면, receiver 를 불러 와야함.
+
+            // (1) sender 인지 receiver 인지 구분
+            // (2) 친구 상태인지 아닌지 구분
+
+            if(friend.getSender().getId().equals(userId)){
+
+                if(friend.getState() == ACCEPTED){
+                    friendResponseDtoList.add(new FriendResponseDto().builder()
+                            .name(friend.getReceiver().getName())
+                            .userId(friend.getReceiver().getId())
+                            .email(friend.getReceiver().getEmail())
+                            .profileImagePath(friend.getReceiver().getProfileImagePath())
+                            .friendState(friend.getState())
+                            .channelId(friend.getChannelId())
+                            .createdAt(friend.getCreatedAt())
+                            .build());
+                } else{
+                    friendResponseDtoList.add(new FriendResponseDto().builder()
+                            .name(friend.getReceiver().getName())
+                            .userId(friend.getReceiver().getId())
+                            .email(friend.getReceiver().getEmail())
+                            .profileImagePath(friend.getReceiver().getProfileImagePath())
+                            .friendState(REQUEST)
+                            .channelId(friend.getChannelId())
+                            .createdAt(friend.getCreatedAt())
+                            .build());
+                }
+
+            }
+            // 내가 receiver 라면 , sender 를 불러 와야 함.
+            else {
+                if(friend.getState() == ACCEPTED){
+                    friendResponseDtoList.add(new FriendResponseDto().builder()
+                            .name(friend.getSender().getName())
+                            .userId(friend.getSender().getId())
+                            .email(friend.getSender().getEmail())
+                            .profileImagePath(friend.getSender().getProfileImagePath())
+                            .friendState(ACCEPTED)
+                            .channelId(friend.getChannelId())
+                            .createdAt(friend.getCreatedAt())
+                            .build());
+                } else{
+                    friendResponseDtoList.add(new FriendResponseDto().builder()
+                            .name(friend.getSender().getName())
+                            .userId(friend.getSender().getId())
+                            .email(friend.getSender().getEmail())
+                            .profileImagePath(friend.getSender().getProfileImagePath())
+                            .friendState(WAIT)
+                            .channelId(friend.getChannelId())
+                            .createdAt(friend.getCreatedAt())
+                            .build());
+                }
+            }
         }
 
-//        log.info("친구 조회 [DONE] userId : {}", userId);
+        log.info("친구 조회 [DONE] userId : {}", userId);
 
         return friendResponseDtoList;
     }
 
     public String acceptFriend(Long userId, String email) {
 
+         //accept 를 하는 경우는 내가 receiver 일때만 이다.
+        // sender & receiver 로 찾아낸다.
+
         log.info("친구 승인 [IN] userId : {} , To : {}", userId, email);
 
-        Member receiver = memberRepository.findByEmail(email)
+        Member sender = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(NO_MEMBER_ERROR));
 
-        Friend friendRow_one = friendRepository.findFriendRow(userId, receiver.getId())
+        Friend friendRow = friendRepository.findFriendRow(sender.getId(), userId)
                 .orElseThrow(() -> new ApiException(NO_FRIEND_REQUEST));
 
-        Friend friendRow_two = friendRepository.findFriendRow(receiver.getId(), userId)
-                .orElseThrow(() -> new ApiException(NO_FRIEND_REQUEST));
+        friendRow.modifyState(ACCEPTED);
 
-        friendRow_one.modifyState(ACCEPTED);
-        friendRow_two.modifyState(ACCEPTED);
-
-        friendRow_one.modifyCreatedAt();
-        friendRow_two.modifyCreatedAt();
+        friendRow.modifyCreatedAt();
 
         log.info("친구 승인 [DONE] userId : {} , To : {}", userId, email);
 
@@ -118,12 +163,10 @@ public class MemberService {
 
         log.info("친구 거절 [IN] userId : {} , To : {}", userId, email);
 
-        Member receiver = memberRepository.findByEmail(email)
+        Member sender = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(NO_MEMBER_ERROR));
 
-
-        friendRepository.deleteFriendRow(userId, receiver.getId());
-        friendRepository.deleteFriendRow(receiver.getId(), userId);
+        friendRepository.deleteFriendRow(sender.getId(), userId);
 
         log.info("친구 거절 [DONE] userId : {} , To : {}", userId, email);
 

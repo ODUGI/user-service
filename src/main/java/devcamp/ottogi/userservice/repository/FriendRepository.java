@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FriendRepository extends JpaRepository<Friend, Long> {
-    @Query("select f from Friend f join f.receiver where f.sender.id = :sender")
-    Optional<List<Friend>> findFriends(@Param("sender") Long userId);
+    @Query("select f from Friend f join f.receiver where f.sender.id = :userId or f.receiver.id = :userId")
+    Optional<List<Friend>> findFriends(@Param("userId") Long userId);
 
     @Query("select f from Friend f where f.sender.id = :sender and f.receiver.id = :receiver")
     Optional<Friend> findFriendRow(@Param("sender") Long sender, @Param(("receiver")) Long receiver);
