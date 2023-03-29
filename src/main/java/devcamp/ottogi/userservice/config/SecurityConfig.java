@@ -66,7 +66,7 @@ public class SecurityConfig {
 
                 .and()
                 .authorizeRequests()
-                .antMatchers("/user/**").permitAll()
+                .antMatchers("/user/**", "/ws").permitAll()
                 .anyRequest().authenticated(); // 나머지 API는 전부 인증 필요
 
         return http.build();
